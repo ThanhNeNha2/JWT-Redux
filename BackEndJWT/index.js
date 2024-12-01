@@ -8,7 +8,11 @@ const userRouter = require("./routes/user");
 
 dotenv.config();
 const app = express();
-
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
 mongoose
   .connect(process.env.MONGODB_URL)
   .then(() => {

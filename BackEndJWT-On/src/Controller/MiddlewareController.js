@@ -31,7 +31,7 @@ const verifyAdmin = async (req, res, next) => {
       if (user) {
         req.user = user;
 
-        if (req.params.id === req.user.id || user.admin) {
+        if (req.params.id === req.user.id || user.isAdmin) {
           return next();
         } else {
           return res.status(403).json("Can you only delete your account ");

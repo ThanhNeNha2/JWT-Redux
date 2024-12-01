@@ -3,17 +3,13 @@ const mongoose = require("mongoose");
 const auth = require("./src/Router/auth");
 const user = require("./src/Router/user");
 const cookieParser = require("cookie-parser");
+var cors = require("cors");
 
 require("dotenv").config();
 const app = express();
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 8080;
 
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.CONNECT_MONGOOSE);
@@ -24,7 +20,20 @@ const connectDB = async () => {
   }
 };
 connectDB();
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Frontend domain
+    credentials: true, // Cho phép gửi cookies/token
+  })
+);
+
 app.use(cookieParser());
+app.use(express.json());
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
 app.use("/v1/auth", auth);
 app.use("/v1/user", user);
 

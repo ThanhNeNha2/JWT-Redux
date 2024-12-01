@@ -16,6 +16,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const { username, password } = req.body;
+
   const user = await User.findOne({ username });
   if (user) {
     const passHash = compareSync(password, user.password);
@@ -28,7 +29,7 @@ const login = async (req, res) => {
         },
         process.env.ACCESS_TOKEN,
         {
-          expiresIn: "60d",
+          expiresIn: "20s",
         }
       );
 
@@ -50,10 +51,11 @@ const login = async (req, res) => {
         path: "/",
         sameSite: "strict",
       });
-      console.log("check SetCookie", SetCookie);
+      const { password, ...userInfo } = user._doc;
       return res.status(200).json({
         message: "Dang nhap thanh cong ",
         accessToken: accessToken,
+        userInfo,
       });
     }
   }
@@ -64,28 +66,35 @@ const login = async (req, res) => {
 
 const refreshToken = async (req, res) => {
   const tokenCookie = req.cookies.refreshToken;
-  if (!tokenCookie)
+  if (!tokenCookie) {
     return res.status(401).json({
       message: "Vui long dang nhap ",
     });
-  if (tokenCookie === SetCookie[0])
+  }
+  console.log(" check tokenCookie ", tokenCookie);
+  console.log(" check SetCookie[0] ", SetCookie[0]);
+  console.log(" check SetCookie ", SetCookie);
+
+  // if (tokenCookie !== SetCookie[0]) {
+  if (!SetCookie.includes(tokenCookie)) {
     return res.status(404).json({
       message: "Khong phai tai khoan cua ban",
     });
+  }
 
-  jwt.verify(tokenCookie, process.env.REFRESH_TOKEN, (err, user) => {
-    const newToken = jwt.sign(
+  jwt.verify(tokenCookie, process.env.REFRESH_TOKEN, async (err, user) => {
+    const newToken = await jwt.sign(
       {
         id: user.id,
         admin: user.admin,
       },
       process.env.ACCESS_TOKEN,
       {
-        expiresIn: "60d",
+        expiresIn: "20s",
       }
     );
 
-    const newResFreshCookie = jwt.sign(
+    const newResFreshCookie = await jwt.sign(
       {
         id: user.id,
         admin: user.admin,
@@ -98,7 +107,7 @@ const refreshToken = async (req, res) => {
     delete SetCookie[0];
     SetCookie.push(newResFreshCookie);
 
-    res.cookie("refreshToken", newResFreshCookie, {
+    await res.cookie("refreshToken", newResFreshCookie, {
       httpOnly: true,
       secure: false,
       path: "/",
@@ -108,10 +117,6 @@ const refreshToken = async (req, res) => {
       message: " refresh thanh cong token  ",
       newToken,
     });
-  });
-
-  return res.status(401).json({
-    message: "Dang nhap khong thanh cong ",
   });
 };
 
